@@ -1,0 +1,332 @@
+package mock
+
+import (
+	"testing"
+)
+
+type AStruct struct {
+	Value int
+}
+
+type MockedStruct struct {
+	Mock
+}
+
+func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
+	ret := m.Called(a, b)
+	return ret[0].(int), ret[1].(string)
+}
+
+func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
+	ret := m.Called(a, b)
+	return ret[0].(int)
+}
+
+func (m *MockedStruct) Func(a int, b interface{}) int {
+	ret := m.Called(a, b)
+	return ret[0].(int)
+}
+
+func (m *MockedStruct) Verify() bool {
+	ret := m.Called()
+	return ret[0].(bool)
+}
+
+func TestSanity(t *testing.T) {
+	m := MockedStruct{}
+	foo := 3
+	m.When("FuncWithRetArg", 1, Any).Return(2).ReturnToArgument(1, &foo).Times(1)
+	m.When("FuncWithRetArg", 2, AnyOfType("**int")).Return(3).ReturnToArgument(1, &foo).AtMost(2)
+	m.When("FuncWithRetArg", 2, AnyOfType("*int")).Return(4).ReturnToArgument(1, 5).AtMost(2)
+	m.When("Verify").Return(false).AtLeast(1)
+
+	var b *int
+	ret := m.FuncWithRetArg(1, &b)
+	if ret != 2 {
+		t.Errorf("Invalid return value. Expected: %d. Found: %d.", 2, ret)
+	}
+	if *b != 3 {
+		t.Errorf("Invalid value for b. Expected: %d. Found: %d.", 3, *b)
+	}
+
+	ret = m.FuncWithRetArg(2, &b)
+	if ret != 3 {
+		t.Errorf("Invalid return value. Expected: %d. Found: %d.", 3, ret)
+	}
+	if *b != 3 {
+		t.Errorf("Invalid value for b. Expected: %d. Found: %d.", 3, *b)
+	}
+
+	var c int
+	ret = m.FuncWithRetArg(2, &c)
+	if ret != 4 {
+		t.Errorf("Invalid return value. Expected: %d. Found: %d.", 4, ret)
+	}
+	if c != 5 {
+		t.Errorf("Invalid value for c. Expected: %d. Found: %d.", 5, *b)
+	}
+
+	ret = m.FuncWithRetArg(2, &c)
+	if ret != 4 {
+		t.Errorf("Invalid return value. Expected: %d. Found: %d.", 4, ret)
+	}
+	if c != 5 {
+		t.Errorf("Invalid value for c. Expected: %d. Found: %d.", 5, *b)
+	}
+
+	ret2 := m.Verify()
+	if ret2 != false {
+		t.Errorf("Invalid return value: Expected: false. Found: %v.", ret2)
+	}
+
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
+}
+
+func TestPanic(t *testing.T) {
+	m := MockedStruct{}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Panic not executed")
+		} else if ok, err := m.Mock.Verify(); !ok {
+			t.Error(err)
+		}
+	}()
+
+	m.When("FuncWithArgs", 1, "foo").Panic("panic").Times(1)
+	m.FuncWithArgs(1, "foo")
+}
+
+func TestReturn(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncWithArgs", 1, "string").Return(2, "stringstring").Times(1)
+	m.When("FuncWithArgs", 2, "string").Return(4, "stringstring").AtLeast(2)
+
+	a, b := m.FuncWithArgs(1, "string")
+	if a != 2 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(2, "string")
+	if a != 4 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(2, "string")
+	if a != 4 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	m.Mock.Verify()
+}
+
+func TestAny(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncWithArgs", 1, Any).Return(2, "booh").Times(1)
+	m.When("FuncWithArgs", 2, Any).Return(4, "booh").Times(2)
+	m.When("FuncWithArgs", AnyOfType("int"), AnyOfType("string")).Return(6, "booh").Times(2)
+
+	a, b := m.FuncWithArgs(1, "string")
+	if a != 2 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(2, "foo")
+	if a != 4 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(2, "bar")
+	if a != 4 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(3, "foo")
+	if a != 6 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(4, "bar")
+	if a != 6 || b != "booh" {
+		t.Error("fail")
+	}
+
+	m.Mock.Verify()
+}
+
+func TestNotFound(t *testing.T) {
+	m := MockedStruct{}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Panic not executed")
+		}
+	}()
+
+	m.When("FuncWithArgs", 1, "string").Return(2, "stringstring")
+	m.FuncWithArgs(1, "foo")
+}
+
+func TestReturnToArgument(t *testing.T) {
+	m := MockedStruct{}
+	ref := "a ref"
+	m.When("FuncWithRetArg", 1, Any).Return(2).ReturnToArgument(1, 1)
+	m.When("FuncWithRetArg", 11, Any).Return(2).ReturnToArgument(1, 1)
+	m.When("FuncWithRetArg", 2, Any).Return(2).ReturnToArgument(1, "a string")
+	m.When("FuncWithRetArg", 22, Any).Return(2).ReturnToArgument(1, "a string")
+	m.When("FuncWithRetArg", 3, Any).Return(2).ReturnToArgument(1, &ref)
+	m.When("FuncWithRetArg", 33, Any).Return(2).ReturnToArgument(1, &ref)
+	m.When("FuncWithRetArg", 4, Any).Return(2).ReturnToArgument(1, true)
+	m.When("FuncWithRetArg", 44, Any).Return(2).ReturnToArgument(1, true)
+	m.When("FuncWithRetArg", 5, Any).Return(2).ReturnToArgument(1, AStruct{5})
+	m.When("FuncWithRetArg", 55, Any).Return(2).ReturnToArgument(1, AStruct{55})
+	m.When("FuncWithRetArg", 6, Any).Return(2).ReturnToArgument(1, &AStruct{6})
+	m.When("FuncWithRetArg", 66, Any).Return(2).ReturnToArgument(1, &AStruct{66})
+
+	var a1 int
+	ret := m.FuncWithRetArg(1, &a1)
+	if ret != 2 || a1 != 1 {
+		t.Error("fail")
+	}
+
+	var a11 *int
+	ret = m.FuncWithRetArg(11, &a11)
+	if ret != 2 || *a11 != 1 {
+		t.Error("fail")
+	}
+
+	var a2 string
+	ret = m.FuncWithRetArg(2, &a2)
+	if ret != 2 || a2 != "a string" {
+		t.Error("fail")
+	}
+
+	var a22 *string
+	ret = m.FuncWithRetArg(22, &a22)
+	if ret != 2 || *a22 != "a string" {
+		t.Error("fail")
+	}
+
+	var a3 string
+	ret = m.FuncWithRetArg(3, &a3)
+	if ret != 2 || a3 != "a ref" {
+		t.Error("fail")
+	}
+
+	var a33 *string
+	ret = m.FuncWithRetArg(33, &a33)
+	if ret != 2 || *a33 != "a ref" {
+		t.Error("fail")
+	}
+
+	var a4 bool
+	ret = m.FuncWithRetArg(4, &a4)
+	if ret != 2 || a4 != true {
+		t.Error("fail")
+	}
+
+	var a44 *bool
+	ret = m.FuncWithRetArg(44, &a44)
+	if ret != 2 || *a44 != true {
+		t.Error("fail")
+	}
+
+	var a5 AStruct
+	ret = m.FuncWithRetArg(5, &a5)
+	if ret != 2 || a5.Value != 5 {
+		t.Error("fail")
+	}
+
+	var a55 *AStruct
+	ret = m.FuncWithRetArg(55, &a55)
+	if ret != 2 || a55.Value != 55 {
+		t.Error("fail")
+	}
+
+	var a6 AStruct
+	ret = m.FuncWithRetArg(6, &a6)
+	if ret != 2 || a6.Value != 6 {
+		t.Error("fail")
+	}
+
+	var a66 *AStruct
+	ret = m.FuncWithRetArg(66, &a66)
+	if ret != 2 || a66.Value != 66 {
+		t.Error("fail")
+	}
+}
+
+func TestTimes(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncWithArgs", 1, "times").Return(1, "stringstring").Times(1)
+	m.When("FuncWithArgs", 1, "atleast2").Return(2, "stringstring").AtLeast(2)
+	m.When("FuncWithArgs", 1, "atleast3").Return(3, "stringstring").AtLeast(2)
+	m.When("FuncWithArgs", 1, "atmost0").Return(4, "stringstring").AtMost(2)
+	m.When("FuncWithArgs", 1, "atmost1").Return(5, "stringstring").AtMost(2)
+	m.When("FuncWithArgs", 1, "atmost2").Return(5, "stringstring").AtMost(2)
+	m.When("FuncWithArgs", 1, "between1").Return(5, "stringstring").Between(1, 3)
+	m.When("FuncWithArgs", 1, "between2").Return(5, "stringstring").Between(1, 3)
+	m.When("FuncWithArgs", 1, "between3").Return(5, "stringstring").Between(1, 3)
+
+	m.FuncWithArgs(1, "times")
+	m.FuncWithArgs(1, "atleast2")
+	m.FuncWithArgs(1, "atleast2")
+	m.FuncWithArgs(1, "atleast3")
+	m.FuncWithArgs(1, "atleast3")
+	m.FuncWithArgs(1, "atleast3")
+	m.FuncWithArgs(1, "atmost1")
+	m.FuncWithArgs(1, "atmost2")
+	m.FuncWithArgs(1, "atmost2")
+	m.FuncWithArgs(1, "between1")
+	m.FuncWithArgs(1, "between2")
+	m.FuncWithArgs(1, "between2")
+	m.FuncWithArgs(1, "between3")
+	m.FuncWithArgs(1, "between3")
+	m.FuncWithArgs(1, "between3")
+
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
+}
+
+func TestTimesFail(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncWithArgs", 1, "times").Return(1, "stringstring").Times(1)
+	if ok, _ := m.Mock.Verify(); ok {
+		t.Error("Error expected and not found")
+	}
+
+	m = MockedStruct{}
+	m.When("FuncWithArgs", 1, "atleast").Return(2, "stringstring").AtLeast(2)
+	m.FuncWithArgs(1, "atleast")
+	if ok, _ := m.Mock.Verify(); ok {
+		t.Error("Error expected and not found")
+	}
+
+	m = MockedStruct{}
+	m.When("FuncWithArgs", 1, "atmost").Return(5, "stringstring").AtMost(2)
+	m.FuncWithArgs(1, "atmost")
+	m.FuncWithArgs(1, "atmost")
+	m.FuncWithArgs(1, "atmost")
+	if ok, _ := m.Mock.Verify(); ok {
+		t.Error("Error expected and not found")
+	}
+
+	m = MockedStruct{}
+	m.When("FuncWithArgs", 1, "between1").Return(5, "stringstring").Between(1, 3)
+	if ok, _ := m.Mock.Verify(); ok {
+		t.Error("Error expected and not found")
+	}
+
+	m = MockedStruct{}
+	m.When("FuncWithArgs", 1, "between2").Return(5, "stringstring").Between(1, 3)
+	m.FuncWithArgs(1, "between2")
+	m.FuncWithArgs(1, "between2")
+	m.FuncWithArgs(1, "between2")
+	m.FuncWithArgs(1, "between2")
+	if ok, _ := m.Mock.Verify(); ok {
+		t.Error("Error expected and not found")
+	}
+}
