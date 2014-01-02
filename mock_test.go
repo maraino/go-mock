@@ -14,22 +14,17 @@ type MockedStruct struct {
 
 func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
 	ret := m.Called(a, b)
-	return ret[0].(int), ret[1].(string)
+	return ret.Int(0), ret.String(1)
 }
 
 func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
 	ret := m.Called(a, b)
-	return ret[0].(int)
-}
-
-func (m *MockedStruct) Func(a int, b interface{}) int {
-	ret := m.Called(a, b)
-	return ret[0].(int)
+	return ret.Int(0)
 }
 
 func (m *MockedStruct) Verify() bool {
 	ret := m.Called()
-	return ret[0].(bool)
+	return ret.Bool(0)
 }
 
 func TestSanity(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
-	// "unsafe"
 )
 
 type Mock struct {
@@ -37,6 +36,10 @@ type MockFunction struct {
 type MockReturnToArgument struct {
 	Argument int
 	Value    interface{}
+}
+
+type MockResult struct {
+	Result []interface{}
 }
 
 type AnyType string
@@ -84,7 +87,7 @@ func (m *Mock) When(name string, arguments ...interface{}) *MockFunction {
 	return f
 }
 
-func (m *Mock) Called(arguments ...interface{}) []interface{} {
+func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Couldn't get the caller information")
@@ -129,7 +132,7 @@ func (m *Mock) Called(arguments ...interface{}) []interface{} {
 			}
 		}
 
-		return f.ReturnValues
+		return &MockResult{f.ReturnValues}
 	}
 
 	panic(fmt.Sprintf("Mock call missing %s (%v)", functionName, arguments))
@@ -218,4 +221,52 @@ func (f *MockFunction) Between(a, b int) *MockFunction {
 	f.countCheck = BETWEEN
 	f.times = [2]int{a, b}
 	return f
+}
+
+func (r *MockResult) Get(i int) interface{} {
+	return r.Result[i]
+}
+
+func (r *MockResult) Int(i int) int {
+	return r.Result[i].(int)
+}
+
+func (r *MockResult) Int8(i int) int8 {
+	return r.Result[i].(int8)
+}
+
+func (r *MockResult) Int16(i int) int16 {
+	return r.Result[i].(int16)
+}
+
+func (r *MockResult) Int32(i int) int32 {
+	return r.Result[i].(int32)
+}
+
+func (r *MockResult) Int64(i int) int64 {
+	return r.Result[i].(int64)
+}
+
+func (r *MockResult) Bool(i int) bool {
+	return r.Result[i].(bool)
+}
+
+func (r *MockResult) Float32(i int) float32 {
+	return r.Result[i].(float32)
+}
+
+func (r *MockResult) Float64(i int) float64 {
+	return r.Result[i].(float64)
+}
+
+func (r *MockResult) String(i int) string {
+	return r.Result[i].(string)
+}
+
+func (r *MockResult) Error(i int) error {
+	if r.Result[i] == nil {
+		return nil
+	} else {
+		return r.Result[i].(error)
+	}
 }
