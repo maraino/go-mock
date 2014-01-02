@@ -1,7 +1,7 @@
 go-mock
 =======
 
-A mock framework for Go.
+A mock framework for Go (golang).
 
 Usage
 -----
