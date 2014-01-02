@@ -32,4 +32,8 @@ func main() {
 	url, _ = url.Parse("http://www.github.com")
 	code, json, err = c.Request(url)
 	fmt.Printf("Code: %d, JSON: %s, Error: %v\n", code, json, err)
+
+	if ok, err := c.Verify(); !ok {
+		fmt.Println(err)
+	}
 }
