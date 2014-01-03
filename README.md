@@ -50,3 +50,110 @@ And finally if we want to verify the number of calls we can use:
 	if ok, err := c.Verify(); !ok {
 		fmt.Println(err)
 	}
+
+API Reference
+-------------
+
+### func (m *Mock) When(name string, arguments ...interface{}) *MockFunction
+
+Creates an stub for a specific function and a list of arguments.
+
+	c.When("FunctionName", argument1, argument2, ...)
+
+It returns a mock.MockFunction that can be used to configure the behavior and
+validations when the method is called
+
+### func (m *Mock) Verify() (bool, error)
+
+Checks all validations and return if true if they are ok, or false and an error
+if at least one validation have failed.
+
+### func (m *Mock) Called(arguments ...interface{}) *MockResult
+
+Called must be used in the struct that implements the interface that we want to mock.
+It's the code that glues that struct with the go-mock package.
+
+We will need to implement the interface and then use Called with the function arguments
+and use the return value to return the values to our mocked struct.
+
+	type Map interface {
+		Set(key string, value interface{})
+		Get(key string) (interface{}, error)
+		GetString(key string) (string, error)
+		Load(key string, value interface{}) error
+	}
+
+	type MyMap struct {
+		mock.Mock
+	}
+
+	func (m *MyMap) Set(key string, value interface{}) {
+		m.Called(key, value)
+	}
+
+	func (m *MyMap) Get(key string) (interface{}, error) {
+		ret := m.Called(key)
+		return ret.Get(0), ret.Error(1)
+	}
+
+	func (m *MyMap) GetString(key string) (string, error) {
+		ret := m.Called(key)
+		return ret.String(0), ret.Error(1)
+	}
+
+	func (m *MyMap) Load(key string, value interface{}) error {
+		ret := m.Called(key, value)
+		return ret.Error(0)
+	}
+
+### func (f *MockFunction) Return(v ...interface{}) *MockFunction
+
+Defines the return parameters of our stub. The use of it is pretty simple, we
+can simply chain mock.When with Return to set the return values.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil)
+	m.When("GetString", "a-test-key").Return("a-test-value", nil)
+	m.When("Get", "another-test-key").Return(123, nil)
+	m.When("Get", mock.Any).Return(nil, errors.New("not-found"))
+
+### func (f *MockFunction) ReturnToArgument(n int, v interface{}) *MockFunction
+
+Defines a special return parameter to an argument of the function. We can also chain
+this method to a When or a Return.
+
+	m.When("Load", "a-test-key").ReturnToArgument(1, "a-test-value")
+	m.When("Load", "another-test-key").Return(nil).ReturnToArgument(1, 123)
+
+### func (f *MockFunction) Panic(v interface{}) *MockFunction
+
+Panic will cause a panic when the stub method is called with the specified parameters.
+
+	m.When("Get", "foobar").Panic("internal error")
+
+### func (f *MockFunction) Times(a int) *MockFunction
+
+Defines the exact number of times a method should be called. This is validated if mock.Verify
+is executed.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil).Times(1)
+
+### func (f *MockFunction) AtLeast(a int) *MockFunction
+
+Defines the minimum number of times a method should be called. This is validated if mock.Verify
+is executed.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil).AtLeast(2)
+
+### func (f *MockFunction) AtMost(a int) *MockFunction
+
+Defines the maximum number of times a method should be called. This is validated if mock.Verify
+is executed.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil).AtMost(1)
+
+### func (f *MockFunction) Between(a, b int) *MockFunction
+
+Defines a range of times a method should be called. This is validated if mock.Verify
+is executed.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil).Between(2, 5)
