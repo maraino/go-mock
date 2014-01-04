@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -20,6 +21,10 @@ func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
 func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
 	ret := m.Called(a, b)
 	return ret.Int(0)
+}
+
+func (m *MockedStruct) FuncMockResult(a interface{}) *MockResult {
+	return m.Called(a)
 }
 
 func (m *MockedStruct) Verify() bool {
@@ -323,5 +328,123 @@ func TestTimesFail(t *testing.T) {
 	m.FuncWithArgs(1, "between2")
 	if ok, _ := m.Mock.Verify(); ok {
 		t.Error("Error expected and not found")
+	}
+}
+
+func TestMockResult(t *testing.T) {
+	m := &MockedStruct{}
+	m.When("FuncMockResult", "struct").Return(m)
+	m.When("FuncMockResult", "bool").Return(true)
+	m.When("FuncMockResult", "error").Return(errors.New("error"))
+	m.When("FuncMockResult", "float32").Return(float32(1.32))
+	m.When("FuncMockResult", "float64").Return(float64(1.64))
+	m.When("FuncMockResult", "int").Return(int(1))
+	m.When("FuncMockResult", "int8").Return(int8(8))
+	m.When("FuncMockResult", "int16").Return(int16(16))
+	m.When("FuncMockResult", "int32").Return(int32(32))
+	m.When("FuncMockResult", "int64").Return(int64(64))
+	m.When("FuncMockResult", "string").Return("string")
+
+	ret := m.FuncMockResult("struct")
+	if ret.Contains(0) != true {
+		t.Error("fail")
+	}
+	if ret.Get(0).(*MockedStruct) != m {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("bool")
+	if ret.Bool(0) != true {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("error")
+	if ret.Error(0).Error() != "error" {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("float32")
+	if ret.Float32(0) != 1.32 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("float64")
+	if ret.Float64(0) != 1.64 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("int")
+	if ret.Int(0) != 1 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("int8")
+	if ret.Int8(0) != 8 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("int16")
+	if ret.Int16(0) != 16 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("int32")
+	if ret.Int32(0) != 32 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("int64")
+	if ret.Int64(0) != 64 {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("string")
+	if ret.String(0) != "string" {
+		t.Error("fail")
+	}
+}
+
+func TestMockResultDefaults(t *testing.T) {
+	m := &MockedStruct{}
+	m.When("FuncMockResult", 1)
+
+	ret := m.FuncMockResult(1)
+
+	// Test all cases
+	if ret.Contains(0) != false {
+		t.Error("fail")
+	}
+	if ret.Get(0) != nil {
+		t.Error("fail")
+	}
+	if ret.Bool(0) != false {
+		t.Error("fail")
+	}
+	if ret.Error(0) != nil {
+		t.Error("fail")
+	}
+	if ret.Float32(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Float64(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Int(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Int8(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Int16(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Int32(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Int64(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.String(0) != "" {
+		t.Error("fail")
 	}
 }

@@ -116,6 +116,9 @@ can simply chain mock.When with Return to set the return values.
 	m.When("Get", "another-test-key").Return(123, nil)
 	m.When("Get", mock.Any).Return(nil, errors.New("not-found"))
 
+If no return values are set, the method will return 0 for numeric types,
+false for bools, "" for strings and nil for errors or any other type.
+
 ### func (f *MockFunction) ReturnToArgument(n int, v interface{}) *MockFunction
 
 Defines a special return parameter to an argument of the function. We can also chain
