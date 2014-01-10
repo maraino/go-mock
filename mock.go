@@ -281,15 +281,6 @@ func (f *MockFunction) isMaxCountCheck() bool {
 	return false
 }
 
-// Returns a specific return parameter.
-// func (r *MockResult) get(i int) (bool, interface{}) {
-// 	if i >= len(r.Result) {
-// 		return false, nil
-// 	} else {
-// 		return true, r.Result[i]
-// 	}
-// }
-
 // Returns true if the results have the index i, false otherwise.
 func (r *MockResult) Contains(i int) bool {
 	if len(r.Result) > i {
