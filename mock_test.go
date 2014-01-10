@@ -119,7 +119,9 @@ func TestReturn(t *testing.T) {
 		t.Error("fail")
 	}
 
-	m.Mock.Verify()
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
 }
 
 func TestAny(t *testing.T) {
@@ -153,7 +155,30 @@ func TestAny(t *testing.T) {
 		t.Error("fail")
 	}
 
-	m.Mock.Verify()
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
+}
+
+func TestFindMultipleMatches(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncWithArgs", 1, "string").Return(1, "").Times(1)
+	m.When("FuncWithArgs", Any, "string").Return(2, "").AtMost(2)
+	m.When("FuncWithArgs", 1, Any).Return(3, "").Times(1)
+	m.When("FuncWithArgs", Any, Any).Return(4, "").Between(1, 3)
+	m.When("FuncWithArgs", AnyOfType("int"), AnyOfType("string")).Return(5, "booh").AtLeast(1)
+
+	results := []int{1, 2, 2, 3, 4, 4, 4, 5, 5, 5, 5}
+	for _, r := range results {
+		a, _ := m.FuncWithArgs(1, "string")
+		if a != r {
+			t.Errorf("Invalid return value. Found: %d, Expected: %d.", a, r)
+		}
+	}
+
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
 }
 
 func TestNotFound(t *testing.T) {

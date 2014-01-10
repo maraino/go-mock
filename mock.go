@@ -157,6 +157,8 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 }
 
 func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
+	var ff *MockFunction
+
 	for _, f := range m.Functions {
 		if f.Name != name {
 			continue
@@ -190,10 +192,19 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 			continue
 		}
 
+		// Check if the count check is valid.
+		// If it's not try to match another function.
+		if f.isMaxCountCheck() {
+			if ff == nil {
+				ff = f
+			}
+			continue
+		}
+
 		return f
 	}
 
-	return nil
+	return ff
 }
 
 // Defines the return values of a *MockFunction.
@@ -246,14 +257,38 @@ func (f *MockFunction) Between(a, b int) *MockFunction {
 	return f
 }
 
-// Returns a specific return parameter.
-func (r *MockResult) get(i int) (bool, interface{}) {
-	if i >= len(r.Result) {
-		return false, nil
-	} else {
-		return true, r.Result[i]
+// Check if the number of times that a function has been called
+// has reach the top range.
+func (f *MockFunction) isMaxCountCheck() bool {
+	switch f.countCheck {
+	case TIMES:
+		if f.count >= f.times[1] {
+			return true
+		}
+	case AT_LEAST:
+		// At least does not have a maximum
+		return false
+	case AT_MOST:
+		if f.count >= f.times[1] {
+			return true
+		}
+	case BETWEEN:
+		if f.count >= f.times[1] {
+			return true
+		}
 	}
+
+	return false
 }
+
+// Returns a specific return parameter.
+// func (r *MockResult) get(i int) (bool, interface{}) {
+// 	if i >= len(r.Result) {
+// 		return false, nil
+// 	} else {
+// 		return true, r.Result[i]
+// 	}
+// }
 
 // Returns true if the results have the index i, false otherwise.
 func (r *MockResult) Contains(i int) bool {
