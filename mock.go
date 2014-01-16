@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Mock should be embedded in the struct that we want to act as a Mock.
@@ -15,6 +16,13 @@ import (
 // 		}
 type Mock struct {
 	Functions []*MockFunction
+	inorder   bool
+	order     uint
+}
+
+type InOrder struct {
+	functions []*MockFunction
+	order     uint
 }
 
 type MockCountCheckType int
@@ -36,6 +44,8 @@ type MockFunction struct {
 	count             int
 	countCheck        MockCountCheckType
 	times             [2]int
+	order             uint
+	timeout           time.Duration
 }
 
 type MockReturnToArgument struct {
@@ -118,6 +128,12 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	if f := m.find(functionName, arguments...); f != nil {
 		// Increase the counter
 		f.count++
+		f.order = m.order
+		m.order++
+
+		if f.timeout > 0 {
+			time.Sleep(f.timeout)
+		}
 
 		if f.PanicValue != nil {
 			panic(f.PanicValue)
@@ -254,6 +270,12 @@ func (f *MockFunction) AtMost(a int) *MockFunction {
 func (f *MockFunction) Between(a, b int) *MockFunction {
 	f.countCheck = BETWEEN
 	f.times = [2]int{a, b}
+	return f
+}
+
+// Defines a timeout to sleep before returning the value of a function.
+func (f *MockFunction) Timeout(d time.Duration) *MockFunction {
+	f.timeout = d
 	return f
 }
 

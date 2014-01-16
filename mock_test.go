@@ -3,6 +3,7 @@ package mock
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 type AStruct struct {
@@ -38,7 +39,7 @@ func TestSanity(t *testing.T) {
 	m.When("FuncWithRetArg", 1, Any).Return(2).ReturnToArgument(1, &foo).Times(1)
 	m.When("FuncWithRetArg", 2, AnyOfType("**int")).Return(3).ReturnToArgument(1, &foo).AtMost(2)
 	m.When("FuncWithRetArg", 2, AnyOfType("*int")).Return(4).ReturnToArgument(1, 5).AtMost(2)
-	m.When("Verify").Return(false).AtLeast(1)
+	m.When("Verify").Return(false).AtLeast(1).Timeout(100 * time.Millisecond)
 
 	var b *int
 	ret := m.FuncWithRetArg(1, &b)
@@ -353,6 +354,38 @@ func TestTimesFail(t *testing.T) {
 	m.FuncWithArgs(1, "between2")
 	if ok, _ := m.Mock.Verify(); ok {
 		t.Error("Error expected and not found")
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	m := &MockedStruct{}
+	m.When("FuncWithArgs", 1, "string").Return(1, "stringstring").Timeout(200 * time.Millisecond)
+	m.When("FuncWithArgs", 2, "string").Return(2, "stringstring")
+
+	// Function with timeout
+	t1 := time.Now()
+	a, b := m.FuncWithArgs(1, "string")
+	t2 := time.Now()
+
+	if a != 1 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	if t1.Add(200 * time.Millisecond).After(t2) {
+		t.Error("fail", t1, t2)
+	}
+
+	// Function without timeout
+	t1 = time.Now()
+	a, b = m.FuncWithArgs(2, "string")
+	t2 = time.Now()
+
+	if a != 2 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	if t1.Add(200 * time.Millisecond).Before(t2) {
+		t.Error("fail")
 	}
 }
 
