@@ -1,3 +1,6 @@
+// Package mock provides a mocking framework.
+//
+// https://github.com/maraino/go-mock
 package mock
 
 import (
