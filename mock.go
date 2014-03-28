@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kr/pretty"
 )
 
 // Mock should be embedded in the struct that we want to act as a Mock.
@@ -172,7 +174,9 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 		return &MockResult{f.ReturnValues}
 	}
 
-	panic(fmt.Sprintf("Mock call missing %s (%v)", functionName, arguments))
+	argsStr := pretty.Sprintf("%# v", arguments)
+	argsStr = argsStr[15 : len(argsStr)-1]
+	panic(fmt.Sprintf("Mock call missing for %s(%s)", functionName, argsStr))
 }
 
 func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
