@@ -160,3 +160,9 @@ Defines a range of times a method should be called. This is validated if mock.Ve
 is executed.
 
 	m.When("Get", "a-test-key").Return("a-test-value", nil).Between(2, 5)
+
+### func (f *MockFunction) Timeout(d time.Duration) *MockFunction
+
+Defines a timeout to sleep before returning the value of a function.
+
+	m.When("Get", "a-test-key").Return("a-test-value", nil).Timeout(100 * time.Millisecond)
