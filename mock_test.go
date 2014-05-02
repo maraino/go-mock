@@ -2,6 +2,7 @@ package mock
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -402,6 +403,7 @@ func TestMockResult(t *testing.T) {
 	m.When("FuncMockResult", "int32").Return(int32(32))
 	m.When("FuncMockResult", "int64").Return(int64(64))
 	m.When("FuncMockResult", "string").Return("string")
+	m.When("FuncMockResult", "chan").Return(make(chan int))
 
 	ret := m.FuncMockResult("struct")
 	if ret.Contains(0) != true {
@@ -458,6 +460,13 @@ func TestMockResult(t *testing.T) {
 
 	ret = m.FuncMockResult("string")
 	if ret.String(0) != "string" {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("chan")
+	c := ret.Get(0)
+	v := reflect.ValueOf(c)
+	if v.Type().String() != "chan int" {
 		t.Error("fail")
 	}
 }
