@@ -15,6 +15,10 @@ type MockedStruct struct {
 	Mock
 }
 
+func (m *MockedStruct) FuncNoArgs() int {
+	ret := m.Called()
+	return ret.Int(0)
+}
 func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
 	ret := m.Called(a, b)
 	return ret.Int(0), ret.String(1)
@@ -103,8 +107,20 @@ func TestPanic(t *testing.T) {
 
 func TestReturn(t *testing.T) {
 	m := MockedStruct{}
+	m.When("FuncNoArgs").Return(1).Times(1)
+	m.When("FuncNoArgs").Return(2).Times(1)
 	m.When("FuncWithArgs", 1, "string").Return(2, "stringstring").Times(1)
 	m.When("FuncWithArgs", 2, "string").Return(4, "stringstring").AtLeast(2)
+
+	i := m.FuncNoArgs()
+	if i != 1 {
+		t.Error("fail")
+	}
+
+	i = m.FuncNoArgs()
+	if i != 2 {
+		t.Error("fail")
+	}
 
 	a, b := m.FuncWithArgs(1, "string")
 	if a != 2 || b != "stringstring" {
