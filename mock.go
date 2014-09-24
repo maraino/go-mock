@@ -101,6 +101,13 @@ func (m *Mock) Verify() (bool, error) {
 	return true, nil
 }
 
+// Reset removes all stubs defined.
+func (m *Mock) Reset() *Mock {
+	m.Functions = nil
+	m.order = 0
+	return m
+}
+
 // Defines an stub of one method with some specific arguments. It returns a *MockFunction
 // that can be configured with Return, ReturnToArgument, Panic, ...
 func (m *Mock) When(name string, arguments ...interface{}) *MockFunction {

@@ -90,6 +90,33 @@ func TestSanity(t *testing.T) {
 	}
 }
 
+func TestReset(t *testing.T) {
+	m := MockedStruct{}
+	m.When("FuncNoArgs").Return(1)
+
+	i := m.FuncNoArgs()
+	if i != 1 {
+		t.Error("fail")
+	}
+
+	m.Reset()
+
+	if len(m.Functions) != 0 {
+		t.Error("fail")
+	}
+
+	if m.order != 0 {
+		t.Error("fail")
+	}
+
+	m.When("FuncNoArgs").Return(2)
+
+	i = m.FuncNoArgs()
+	if i != 2 {
+		t.Error("fail")
+	}
+}
+
 func TestPanic(t *testing.T) {
 	m := MockedStruct{}
 

@@ -63,6 +63,10 @@ Creates an stub for a specific function and a list of arguments.
 It returns a mock.MockFunction that can be used to configure the behavior and
 validations when the method is called
 
+### func (m *Mock) Reset() *Mock
+
+Removes all the defined stubs and returns a clean mock.
+
 ### func (m *Mock) Verify() (bool, error)
 
 Checks all validations and return if true if they are ok, or false and an error
