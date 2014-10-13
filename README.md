@@ -1,7 +1,9 @@
 go-mock
 =======
 
-A mock framework for Go (golang).
+A mocking framework for [Go](http://golang.org/).
+
+Read online reference at http://godoc.org/github.com/maraino/go-mock
 
 Usage
 -----

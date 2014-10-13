@@ -1,4 +1,4 @@
-// Package mock provides a mocking framework.
+// Package mock provides a mocking framework for Go.
 //
 // https://github.com/maraino/go-mock
 package mock
