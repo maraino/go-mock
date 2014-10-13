@@ -437,6 +437,9 @@ func TestMockResult(t *testing.T) {
 	m := &MockedStruct{}
 	m.When("FuncMockResult", "struct").Return(m)
 	m.When("FuncMockResult", "bool").Return(true)
+	m.When("FuncMockResult", "byte").Return(byte('a'))
+	m.When("FuncMockResult", "bytes").Return([]byte("abc"))
+	m.When("FuncMockResult", "bytes.nil").Return(nil)
 	m.When("FuncMockResult", "error").Return(errors.New("error"))
 	m.When("FuncMockResult", "float32").Return(float32(1.32))
 	m.When("FuncMockResult", "float64").Return(float64(1.64))
@@ -458,6 +461,21 @@ func TestMockResult(t *testing.T) {
 
 	ret = m.FuncMockResult("bool")
 	if ret.Bool(0) != true {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("byte")
+	if ret.Byte(0) != byte('a') {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("bytes")
+	if string(ret.Bytes(0)) != "abc" {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("bytes.nil")
+	if ret.Bytes(0) != nil {
 		t.Error("fail")
 	}
 
@@ -528,6 +546,12 @@ func TestMockResultDefaults(t *testing.T) {
 		t.Error("fail")
 	}
 	if ret.Bool(0) != false {
+		t.Error("fail")
+	}
+	if ret.Byte(0) != 0 {
+		t.Error("fail")
+	}
+	if ret.Bytes(0) != nil {
 		t.Error("fail")
 	}
 	if ret.Error(0) != nil {

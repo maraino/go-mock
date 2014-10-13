@@ -346,6 +346,30 @@ func (r *MockResult) Bool(i int) bool {
 	}
 }
 
+// Returns a specific return parameter as a byte.
+// If a result has not been set, it returns 0.
+func (r *MockResult) Byte(i int) byte {
+	if r.Contains(i) {
+		return r.Result[i].(byte)
+	} else {
+		return 0
+	}
+}
+
+// Returns a specific return parameter as a []byte.
+// If a result has not been set, it returns nil.
+func (r *MockResult) Bytes(i int) []byte {
+	if r.Contains(i) {
+		if rr := r.Result[i]; rr == nil {
+			return nil
+		} else {
+			return rr.([]byte)
+		}
+	} else {
+		return nil
+	}
+}
+
 // Returns a specific return parameter as an error.
 // If a result has not been set, it returns nil.
 func (r *MockResult) Error(i int) error {
