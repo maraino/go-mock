@@ -25,11 +25,6 @@ type Mock struct {
 	order     uint
 }
 
-type InOrder struct {
-	functions []*MockFunction
-	order     uint
-}
-
 type MockCountCheckType int
 
 const (
@@ -40,6 +35,7 @@ const (
 	BETWEEN
 )
 
+// MockFunction is the struct used to store the properties of a method stub.
 type MockFunction struct {
 	Name              string
 	Arguments         []interface{}
@@ -53,30 +49,41 @@ type MockFunction struct {
 	timeout           time.Duration
 }
 
+// MockReturnToArgument defines the function arguments used as return parameters.
 type MockReturnToArgument struct {
 	Argument int
 	Value    interface{}
 }
 
+// MockResult struct is used to store the return arguments of a method stub.
 type MockResult struct {
 	Result []interface{}
 }
 
-// The constant Any can be used to replace any kind of argument in the stub configuration.
+// AnyType defines the type used as a replacement for any kind of argument in the stub configuration.
 type AnyType string
 
+// Any is the constant that should be used to represent a AnyType.
+//
+// Example:
+//		mock.When("MyMethod", mock.Any, mock.Any).Return(0)
 const (
 	Any AnyType = "mock.any"
 )
 
+// AnythingOfType defines the type used as a replacement for an argument of a
+// specific type in the stub configuration.
 type AnythingOfType string
 
-// AnyOfType can be used to replace any kind of argument of an specific type in the stub configuration.
+// AnyOfType is a helper to define AnythingOfType arguments.
+//
+// Example:
+// 		mock.When("MyMethod", mock.AnyOfType("int"), mock.AnyOfType("string")).Return(0)
 func AnyOfType(t string) AnythingOfType {
 	return AnythingOfType(t)
 }
 
-// Verifies the restrictions set in the stubbing.
+// Verify verifies the restrictions set in the stubbing.
 func (m *Mock) Verify() (bool, error) {
 	for _, f := range m.Functions {
 		switch f.countCheck {
@@ -108,7 +115,7 @@ func (m *Mock) Reset() *Mock {
 	return m
 }
 
-// Defines an stub of one method with some specific arguments. It returns a *MockFunction
+// When defines an stub of one method with some specific arguments. It returns a *MockFunction
 // that can be configured with Return, ReturnToArgument, Panic, ...
 func (m *Mock) When(name string, arguments ...interface{}) *MockFunction {
 	f := &MockFunction{
@@ -120,7 +127,7 @@ func (m *Mock) When(name string, arguments ...interface{}) *MockFunction {
 	return f
 }
 
-// Used in the mocks to replace the actual task.
+// Called is the function used in the mocks to replace the actual task.
 //
 // Example:
 // 		func (m *MyClient) Request(url string) (int, string, error) {
@@ -237,25 +244,25 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 	return ff
 }
 
-// Defines the return values of a *MockFunction.
+// Return defines the return values of a *MockFunction.
 func (f *MockFunction) Return(v ...interface{}) *MockFunction {
 	f.ReturnValues = append(f.ReturnValues, v...)
 	return f
 }
 
-// Defines the values returned to a specific argument of a *MockFunction.
+// ReturnToArgument defines the values returned to a specific argument of a *MockFunction.
 func (f *MockFunction) ReturnToArgument(n int, v interface{}) *MockFunction {
 	f.ReturnToArguments = append(f.ReturnToArguments, MockReturnToArgument{n, v})
 	return f
 }
 
-// Defines a panic for a specific *MockFunction.
+// Panic defines a panic for a specific *MockFunction.
 func (f *MockFunction) Panic(v interface{}) *MockFunction {
 	f.PanicValue = v
 	return f
 }
 
-// Defines how many times a *MockFunction must be called.
+// Times defines how many times a *MockFunction must be called.
 // This is verified if mock.Verify is called.
 func (f *MockFunction) Times(a int) *MockFunction {
 	f.countCheck = TIMES
@@ -263,7 +270,7 @@ func (f *MockFunction) Times(a int) *MockFunction {
 	return f
 }
 
-// Defines the number of times that a *MockFunction must be at least called.
+// AtLeast defines the number of times that a *MockFunction must be at least called.
 // This is verified if mock.Verify is called.
 func (f *MockFunction) AtLeast(a int) *MockFunction {
 	f.countCheck = AT_LEAST
@@ -271,7 +278,7 @@ func (f *MockFunction) AtLeast(a int) *MockFunction {
 	return f
 }
 
-// Defines the number of times that a *MockFunction must be at most called.
+// AtMost defines the number of times that a *MockFunction must be at most called.
 // This is verified if mock.Verify is called.
 func (f *MockFunction) AtMost(a int) *MockFunction {
 	f.countCheck = AT_MOST
@@ -279,7 +286,7 @@ func (f *MockFunction) AtMost(a int) *MockFunction {
 	return f
 }
 
-// Defines a range of times that a *MockFunction must be called.
+// Between defines a range of times that a *MockFunction must be called.
 // This is verified if mock.Verify is called.
 func (f *MockFunction) Between(a, b int) *MockFunction {
 	f.countCheck = BETWEEN
@@ -287,7 +294,7 @@ func (f *MockFunction) Between(a, b int) *MockFunction {
 	return f
 }
 
-// Defines a timeout to sleep before returning the value of a function.
+// Timeout defines a timeout to sleep before returning the value of a function.
 func (f *MockFunction) Timeout(d time.Duration) *MockFunction {
 	f.timeout = d
 	return f
@@ -317,7 +324,7 @@ func (f *MockFunction) isMaxCountCheck() bool {
 	return false
 }
 
-// Returns true if the results have the index i, false otherwise.
+// Contains returns true if the results have the index i, false otherwise.
 func (r *MockResult) Contains(i int) bool {
 	if len(r.Result) > i {
 		return true
@@ -326,7 +333,7 @@ func (r *MockResult) Contains(i int) bool {
 	}
 }
 
-// Returns a specific return parameter.
+// Get returns a specific return parameter.
 // If a result has not been set, it returns nil,
 func (r *MockResult) Get(i int) interface{} {
 	if r.Contains(i) {
@@ -336,7 +343,7 @@ func (r *MockResult) Get(i int) interface{} {
 	}
 }
 
-// Returns a specific return parameter as a bool.
+// Bool returns a specific return parameter as a bool.
 // If a result has not been set, it returns false.
 func (r *MockResult) Bool(i int) bool {
 	if r.Contains(i) {
@@ -346,7 +353,7 @@ func (r *MockResult) Bool(i int) bool {
 	}
 }
 
-// Returns a specific return parameter as a byte.
+// Byte returns a specific return parameter as a byte.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Byte(i int) byte {
 	if r.Contains(i) {
@@ -356,7 +363,7 @@ func (r *MockResult) Byte(i int) byte {
 	}
 }
 
-// Returns a specific return parameter as a []byte.
+// Bytes returns a specific return parameter as a []byte.
 // If a result has not been set, it returns nil.
 func (r *MockResult) Bytes(i int) []byte {
 	if r.Contains(i) {
@@ -370,7 +377,7 @@ func (r *MockResult) Bytes(i int) []byte {
 	}
 }
 
-// Returns a specific return parameter as an error.
+// Error returns a specific return parameter as an error.
 // If a result has not been set, it returns nil.
 func (r *MockResult) Error(i int) error {
 	if r.Contains(i) && r.Result[i] != nil {
@@ -380,7 +387,7 @@ func (r *MockResult) Error(i int) error {
 	}
 }
 
-// Returns a specific return parameter as a float32.
+// Float32 returns a specific return parameter as a float32.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Float32(i int) float32 {
 	if r.Contains(i) {
@@ -390,7 +397,7 @@ func (r *MockResult) Float32(i int) float32 {
 	}
 }
 
-// Returns a specific return parameter as a float64.
+// Float64 returns a specific return parameter as a float64.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Float64(i int) float64 {
 	if r.Contains(i) {
@@ -400,7 +407,7 @@ func (r *MockResult) Float64(i int) float64 {
 	}
 }
 
-// Returns a specific return parameter as an int.
+// Int returns a specific return parameter as an int.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Int(i int) int {
 	if r.Contains(i) {
@@ -410,7 +417,7 @@ func (r *MockResult) Int(i int) int {
 	}
 }
 
-// Returns a specific return parameter as an int8.
+// Int8 returns a specific return parameter as an int8.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Int8(i int) int8 {
 	if r.Contains(i) {
@@ -420,7 +427,7 @@ func (r *MockResult) Int8(i int) int8 {
 	}
 }
 
-// Returns a specific return parameter as an int16.
+// Int16 returns a specific return parameter as an int16.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Int16(i int) int16 {
 	if r.Contains(i) {
@@ -430,7 +437,7 @@ func (r *MockResult) Int16(i int) int16 {
 	}
 }
 
-// Returns a specific return parameter as an int32.
+// Int32 returns a specific return parameter as an int32.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Int32(i int) int32 {
 	if r.Contains(i) {
@@ -440,7 +447,7 @@ func (r *MockResult) Int32(i int) int32 {
 	}
 }
 
-// Returns a specific return parameter as an int64.
+// Int64 returns a specific return parameter as an int64.
 // If a result has not been set, it returns 0.
 func (r *MockResult) Int64(i int) int64 {
 	if r.Contains(i) {
@@ -450,7 +457,7 @@ func (r *MockResult) Int64(i int) int64 {
 	}
 }
 
-// Returns a specific return parameter as a string.
+// String returns a specific return parameter as a string.
 // If a result has not been set, it returns "".
 func (r *MockResult) String(i int) string {
 	if r.Contains(i) {

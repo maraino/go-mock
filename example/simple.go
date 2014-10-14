@@ -1,9 +1,13 @@
+// +build ignore
+
+// Simple application to show the use of go-mock.
 package main
 
 import (
 	"fmt"
-	"github.com/maraino/go-mock"
 	"net/url"
+
+	"github.com/maraino/go-mock"
 )
 
 type Client interface {
