@@ -24,6 +24,13 @@ func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
 	return ret.Int(0), ret.String(1)
 }
 
+func (m *MockedStruct) FuncWithPointerArgs(a int, b *string) (r1 int, r2 *string) {
+	ret := m.Called(a, b)
+	r1 = ret.Int(0)
+	r2 = ret.GetType(1, reflect.TypeOf(r2)).(*string)
+	return
+}
+
 func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
 	ret := m.Called(a, b)
 	return ret.Int(0)
@@ -197,6 +204,34 @@ func TestAny(t *testing.T) {
 
 	a, b = m.FuncWithArgs(4, "bar")
 	if a != 6 || b != "booh" {
+		t.Error("fail")
+	}
+
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
+	}
+}
+
+func TestNil(t *testing.T) {
+	m := MockedStruct{}
+	var s = "string"
+	m.When("FuncWithRetArg", 1, nil).Return(2).Times(1)
+	m.When("FuncWithPointerArgs", 2, nil).Return(3, nil).Times(1)
+	m.When("FuncWithPointerArgs", 3, &s).Return(4, &s).Times(1)
+
+	var aNil *string
+	a := m.FuncWithRetArg(1, aNil)
+	if a != 2 {
+		t.Error("fail")
+	}
+
+	b, c := m.FuncWithPointerArgs(2, aNil)
+	if b != 3 && c != nil {
+		t.Error("fail")
+	}
+
+	b, c = m.FuncWithPointerArgs(3, &s)
+	if b != 4 && *c != s {
 		t.Error("fail")
 	}
 
@@ -434,8 +469,11 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestMockResult(t *testing.T) {
+	var mNil *MockedStruct
 	m := &MockedStruct{}
 	m.When("FuncMockResult", "struct").Return(m)
+	m.When("FuncMockResult", "nil").Return(nil)
+	m.When("FuncMockResult", "nil.with.type").Return(mNil)
 	m.When("FuncMockResult", "bool").Return(true)
 	m.When("FuncMockResult", "byte").Return(byte('a'))
 	m.When("FuncMockResult", "bytes").Return([]byte("abc"))
@@ -456,6 +494,19 @@ func TestMockResult(t *testing.T) {
 		t.Error("fail")
 	}
 	if ret.Get(0).(*MockedStruct) != m {
+		t.Error("fail")
+	}
+	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != m {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("nil")
+	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != nil {
+		t.Error("fail")
+	}
+
+	ret = m.FuncMockResult("nil.with.type")
+	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != nil {
 		t.Error("fail")
 	}
 

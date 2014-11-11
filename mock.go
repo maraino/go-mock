@@ -217,6 +217,11 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 					found = false
 				}
 			default:
+				v := reflect.ValueOf(arguments[i])
+				if arg == nil && (arguments[i] == nil || (v.CanInterface() && v.IsNil())) {
+					continue
+				}
+
 				if reflect.DeepEqual(arg, arguments[i]) || reflect.ValueOf(arg) == reflect.ValueOf(arguments[i]) {
 					continue
 				} else {
@@ -341,6 +346,18 @@ func (r *MockResult) Get(i int) interface{} {
 	} else {
 		return nil
 	}
+}
+
+// GetType returns a specific return parameter as a specific Type,
+// A nil version of the type can be casted without causing a panic.
+func (r *MockResult) GetType(i int, typ reflect.Type) interface{} {
+	v := reflect.New(typ).Elem()
+	if r.Contains(i) {
+		if r.Result[i] != nil {
+			v.Set(reflect.ValueOf(r.Result[i]))
+		}
+	}
+	return v.Interface()
 }
 
 // Bool returns a specific return parameter as a bool.
