@@ -15,6 +15,13 @@ type MockedStruct struct {
 	Mock
 }
 
+type MockedInterface interface {
+	FuncNoArgs() int
+	FuncWithArgs(a int, b string) (int, string)
+	FuncWithPointerArgs(a int, b *string) (int, *string)
+	FuncWithRetArg(a int, b interface{}) int
+}
+
 func (m *MockedStruct) FuncNoArgs() int {
 	ret := m.Called()
 	return ret.Int(0)
@@ -27,13 +34,19 @@ func (m *MockedStruct) FuncWithArgs(a int, b string) (int, string) {
 func (m *MockedStruct) FuncWithPointerArgs(a int, b *string) (r1 int, r2 *string) {
 	ret := m.Called(a, b)
 	r1 = ret.Int(0)
-	r2 = ret.GetType(1, reflect.TypeOf(r2)).(*string)
+	r2 = ret.GetType(1, r2).(*string)
 	return
 }
 
 func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
 	ret := m.Called(a, b)
 	return ret.Int(0)
+}
+
+func (m *MockedStruct) FuncMockedInterface(a interface{}) (i MockedInterface) {
+	ret := m.Called(a)
+	i = ret.GetType(0, &MockedStruct{}).(MockedInterface)
+	return
 }
 
 func (m *MockedStruct) FuncMockResult(a interface{}) *MockResult {
@@ -140,11 +153,12 @@ func TestPanic(t *testing.T) {
 }
 
 func TestReturn(t *testing.T) {
-	m := MockedStruct{}
+	m := &MockedStruct{}
 	m.When("FuncNoArgs").Return(1).Times(1)
 	m.When("FuncNoArgs").Return(2).Times(1)
 	m.When("FuncWithArgs", 1, "string").Return(2, "stringstring").Times(1)
 	m.When("FuncWithArgs", 2, "string").Return(4, "stringstring").AtLeast(2)
+	m.When("FuncMockedInterface", 3).Return(m).Times(1)
 
 	i := m.FuncNoArgs()
 	if i != 1 {
@@ -168,6 +182,11 @@ func TestReturn(t *testing.T) {
 
 	a, b = m.FuncWithArgs(2, "string")
 	if a != 4 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	mi := m.FuncMockedInterface(3)
+	if mm, ok := mi.(*MockedStruct); !ok || mm != m {
 		t.Error("fail")
 	}
 
@@ -496,17 +515,17 @@ func TestMockResult(t *testing.T) {
 	if ret.Get(0).(*MockedStruct) != m {
 		t.Error("fail")
 	}
-	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != m {
+	if ret.GetType(0, m).(*MockedStruct) != m {
 		t.Error("fail")
 	}
 
 	ret = m.FuncMockResult("nil")
-	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != nil {
+	if ret.GetType(0, m).(*MockedStruct) != nil {
 		t.Error("fail")
 	}
 
 	ret = m.FuncMockResult("nil.with.type")
-	if ret.GetType(0, reflect.TypeOf(m)).(*MockedStruct) != nil {
+	if ret.GetType(0, m).(*MockedStruct) != nil {
 		t.Error("fail")
 	}
 

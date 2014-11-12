@@ -137,7 +137,7 @@ func (m *Mock) When(name string, arguments ...interface{}) *MockFunction {
 func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
-		panic("Couldn't get the caller information")
+		panic("Could not get the caller information")
 	}
 
 	functionPath := runtime.FuncForPC(pc).Name()
@@ -348,10 +348,15 @@ func (r *MockResult) Get(i int) interface{} {
 	}
 }
 
-// GetType returns a specific return parameter as a specific Type,
-// A nil version of the type can be casted without causing a panic.
-func (r *MockResult) GetType(i int, typ reflect.Type) interface{} {
-	v := reflect.New(typ).Elem()
+// GetType returns a specific return parameter with the same type of
+// the second argument. A nil version of the type can be casted
+// without causing a panic.
+func (r *MockResult) GetType(i int, ii interface{}) interface{} {
+	t := reflect.TypeOf(ii)
+	if t == nil {
+		panic(fmt.Sprintf("Could not get type information for %#v", ii))
+	}
+	v := reflect.New(t).Elem()
 	if r.Contains(i) {
 		if r.Result[i] != nil {
 			v.Set(reflect.ValueOf(r.Result[i]))
