@@ -152,6 +152,18 @@ func TestPanic(t *testing.T) {
 	m.FuncWithArgs(1, "foo")
 }
 
+func TestMockMissingPanic(t *testing.T) {
+	m := MockedStruct{}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Panic not executed")
+		}
+	}()
+
+	m.FuncNoArgs()
+}
+
 func TestReturn(t *testing.T) {
 	m := &MockedStruct{}
 	m.When("FuncNoArgs").Return(1).Times(1)

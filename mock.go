@@ -188,9 +188,15 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 		return &MockResult{f.ReturnValues}
 	}
 
-	argsStr := pretty.Sprintf("%# v", arguments)
-	argsStr = argsStr[15 : len(argsStr)-1]
-	panic(fmt.Sprintf("Mock call missing for %s(%s)", functionName, argsStr))
+	var msg string
+	if len(arguments) == 0 {
+		msg = fmt.Sprintf("Mock call missing for %s()", functionName)
+	} else {
+		argsStr := pretty.Sprintf("%# v", arguments)
+		argsStr = argsStr[15 : len(argsStr)-1]
+		msg = fmt.Sprintf("Mock call missing for %s(%s)", functionName, argsStr)
+	}
+	panic(msg)
 }
 
 func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
