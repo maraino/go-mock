@@ -208,10 +208,21 @@ func TestReturn(t *testing.T) {
 }
 
 func TestAny(t *testing.T) {
+	f1 := func(i interface{}) bool {
+		ii, ok := i.(int)
+		return ok && (ii == 5 || i == 6)
+	}
+
+	f2 := func(i interface{}) bool {
+		ii, ok := i.(string)
+		return ok && ii == "foo"
+	}
+
 	m := MockedStruct{}
 	m.When("FuncWithArgs", 1, Any).Return(2, "booh").Times(1)
 	m.When("FuncWithArgs", 2, Any).Return(4, "booh").Times(2)
 	m.When("FuncWithArgs", AnyOfType("int"), AnyOfType("string")).Return(6, "booh").Times(2)
+	m.When("FuncWithArgs", AnyIf(f1), AnyIf(f2)).Return(8, "booh").Times(2)
 
 	a, b := m.FuncWithArgs(1, "string")
 	if a != 2 || b != "booh" {
@@ -235,6 +246,16 @@ func TestAny(t *testing.T) {
 
 	a, b = m.FuncWithArgs(4, "bar")
 	if a != 6 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(5, "foo")
+	if a != 8 || b != "booh" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(6, "foo")
+	if a != 8 || b != "booh" {
 		t.Error("fail")
 	}
 
@@ -302,6 +323,24 @@ func TestNotFound(t *testing.T) {
 	}()
 
 	m.When("FuncWithArgs", 1, "string").Return(2, "stringstring")
+	m.FuncWithArgs(1, "foo")
+}
+
+func TestAnyIfNotFound(t *testing.T) {
+	m := MockedStruct{}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Panic not executed")
+		}
+	}()
+
+	f1 := func(i interface{}) bool {
+		ii, ok := i.(int)
+		return ok && ii == 2
+	}
+
+	m.When("FuncWithArgs", AnyIf(f1), "foo").Return(2, "stringstring")
 	m.FuncWithArgs(1, "foo")
 }
 

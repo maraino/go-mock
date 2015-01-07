@@ -83,6 +83,21 @@ func AnyOfType(t string) AnythingOfType {
 	return AnythingOfType(t)
 }
 
+// AnyIfType defines the type used as an argument that satisfies a condition.
+type AnyIfType func(interface{}) bool
+
+// AnyIf is a helper to define AnyIfType arguments.
+//
+// Example:
+// 		f := func(i interface{}) bool {
+// 			ii, ok := i.(MyType)
+// 			return ok && ii.ID = "the-id"
+// 		}
+// 		mock.When("MyMethod", mock.AnyIf(f)).Return(0)
+func AnyIf(f func(interface{}) bool) AnyIfType {
+	return AnyIfType(f)
+}
+
 // Verify verifies the restrictions set in the stubbing.
 func (m *Mock) Verify() (bool, error) {
 	for _, f := range m.Functions {
@@ -218,6 +233,13 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 				continue
 			case AnythingOfType:
 				if string(arg.(AnythingOfType)) == reflect.TypeOf(arguments[i]).String() {
+					continue
+				} else {
+					found = false
+				}
+			case AnyIfType:
+				cond, ok := arg.(AnyIfType)
+				if ok && cond(arguments[i]) {
 					continue
 				} else {
 					found = false
