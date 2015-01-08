@@ -100,23 +100,23 @@ func AnyIf(f func(interface{}) bool) AnyIfType {
 
 // Verify verifies the restrictions set in the stubbing.
 func (m *Mock) Verify() (bool, error) {
-	for _, f := range m.Functions {
+	for i, f := range m.Functions {
 		switch f.countCheck {
 		case TIMES:
 			if f.count != f.times[1] {
-				return false, fmt.Errorf("Function %s executed %d times, expected: %d", f.Name, f.count, f.times[1])
+				return false, fmt.Errorf("Function #%d %s executed %d times, expected: %d", i+1, f.Name, f.count, f.times[1])
 			}
 		case AT_LEAST:
 			if f.count < f.times[1] {
-				return false, fmt.Errorf("Function %s executed %d times, expected at least: %d", f.Name, f.count, f.times[1])
+				return false, fmt.Errorf("Function #%d %s executed %d times, expected at least: %d", i+1, f.Name, f.count, f.times[1])
 			}
 		case AT_MOST:
 			if f.count > f.times[1] {
-				return false, fmt.Errorf("Function %s executed %d times, expected at most: %d", f.Name, f.count, f.times[1])
+				return false, fmt.Errorf("Function #%d %s executed %d times, expected at most: %d", i+1, f.Name, f.count, f.times[1])
 			}
 		case BETWEEN:
 			if f.count < f.times[0] || f.count > f.times[1] {
-				return false, fmt.Errorf("Function %s executed %d times, expected between: [%d, %d]", f.Name, f.count, f.times[0], f.times[1])
+				return false, fmt.Errorf("Function #%d %s executed %d times, expected between: [%d, %d]", i+1, f.Name, f.count, f.times[0], f.times[1])
 			}
 		}
 	}
