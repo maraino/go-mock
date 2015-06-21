@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"testing"
 
 	"github.com/kr/pretty"
 )
@@ -136,6 +137,13 @@ func VerifyMocks(mocks ...HasVerify) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// Fail the test if any of the mocks fail verification
+func AssertVerifyMocks(t *testing.T, mocks ...HasVerify) {
+	if ok, err := VerifyMocks(mocks...); !ok {
+		t.Error(err)
+	}
 }
 
 // Reset removes all stubs defined.
