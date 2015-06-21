@@ -123,6 +123,21 @@ func (m *Mock) Verify() (bool, error) {
 	return true, nil
 }
 
+// HasVerify is used as the input of VerifyMocks (Mock satisfies it, obviously)
+type HasVerify interface {
+	Verify() (bool, error)
+}
+
+// VerifyMocks verifies a list of mocks, and returns the first error, if any.
+func VerifyMocks(mocks ...HasVerify) (bool, error) {
+	for _, m := range mocks {
+		if ok, err := m.Verify(); !ok {
+			return ok, err
+		}
+	}
+	return true, nil
+}
+
 // Reset removes all stubs defined.
 func (m *Mock) Reset() *Mock {
 	m.Functions = nil
