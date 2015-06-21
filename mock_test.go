@@ -703,3 +703,22 @@ func TestMockResultDefaults(t *testing.T) {
 		t.Error("fail")
 	}
 }
+
+func TestVerifyMocks(t *testing.T) {
+	good := &Mock{}
+	bad1 := &Mock{}
+	bad2 := &Mock{}
+	bad1.When("foo").Times(1)
+	bad1.When("bar").Times(1)
+	if ok, err := VerifyMocks(good, good, good); !ok {
+		t.Error(err)
+	}
+	ok, err := VerifyMocks(good, bad1, bad2)
+	if ok {
+		t.Fail()
+	}
+	_, bad1Error := bad1.Verify()
+	if err.Error() != bad1Error.Error() {
+		t.Errorf("Expected verification error %s, found %s", bad1Error, err)
+	}
+}
