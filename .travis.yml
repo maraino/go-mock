@@ -1,6 +1,4 @@
 language: go
-go:
-  - tip
 install:
   - go get ./...
   - go get github.com/axw/gocov/gocov
