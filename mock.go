@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	"testing"
 
 	"github.com/kr/pretty"
 )
@@ -139,8 +138,14 @@ func VerifyMocks(mocks ...HasVerify) (bool, error) {
 	return true, nil
 }
 
+// Used to represent a test we can fail, without importing the testing package
+// Importing "testing" in a file not named *_test.go results in tons of test.* flags being added to any compiled binary including this package
+type HasError interface {
+	Error(...interface{})
+}
+
 // Fail the test if any of the mocks fail verification
-func AssertVerifyMocks(t *testing.T, mocks ...HasVerify) {
+func AssertVerifyMocks(t HasError, mocks ...HasVerify) {
 	if ok, err := VerifyMocks(mocks...); !ok {
 		t.Error(err)
 	}
