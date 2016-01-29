@@ -179,3 +179,23 @@ is executed.
 Defines a timeout to sleep before returning the value of a function.
 
 	m.When("Get", "a-test-key").Return("a-test-value", nil).Timeout(100 * time.Millisecond)
+
+### func (f *MockFunction) Call(call interface{}) *MockFunction
+
+Defines a custom function that will be executed instead of the function in the stub.
+The return values of the function will be used as the return values for the stub.
+
+	datastore := make(map[string]interface{})
+
+	m.When("Get", mock.Any).Call(func(key string) (interface{}, error) {
+		if i, ok := datastore[key]; ok {
+			return i, nil
+		} else {
+			return nil, ErrNotFound
+		}
+	})
+
+	m.When("Set", mock.Any, mock.Any).Call(func(key string, value interface{}) error {
+		datastore[key] = value
+		return nil
+	})
