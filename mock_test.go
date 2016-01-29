@@ -20,6 +20,7 @@ type MockedInterface interface {
 	FuncWithArgs(a int, b string) (int, string)
 	FuncWithPointerArgs(a int, b *string) (int, *string)
 	FuncWithRetArg(a int, b interface{}) int
+	FuncVariadic(a int, args ...interface{}) (int, string)
 }
 
 func (m *MockedStruct) FuncNoArgs() int {
@@ -41,6 +42,11 @@ func (m *MockedStruct) FuncWithPointerArgs(a int, b *string) (r1 int, r2 *string
 func (m *MockedStruct) FuncWithRetArg(a int, b interface{}) int {
 	ret := m.Called(a, b)
 	return ret.Int(0)
+}
+
+func (m *MockedStruct) FuncVariadic(a int, args ...interface{}) (int, string) {
+	ret := m.Called(a, args)
+	return ret.Int(0), ret.String(1)
 }
 
 func (m *MockedStruct) FuncMockedInterface(a interface{}) (i MockedInterface) {
@@ -535,6 +541,64 @@ func TestTimeout(t *testing.T) {
 
 	if t1.Add(200 * time.Millisecond).Before(t2) {
 		t.Error("fail")
+	}
+}
+
+func TestCall(t *testing.T) {
+	m := &MockedStruct{}
+	m.When("FuncWithArgs", 1, "string").Call(func(a int, b string) (int, string) {
+		return a * 2, b + b
+	}).Times(1)
+	m.When("FuncWithArgs", 2, "string").Call(func(a int) int {
+		return a * 2
+	}).Times(1)
+	m.When("FuncWithArgs", 3, "string").Call(func() {
+		return
+	}).Times(1)
+	m.When("FuncVariadic", 4, []interface{}{"foo", "bar"}).Call(func(a int, args ...interface{}) (int, string) {
+		b1, b2 := args[0].(string), args[1].(string)
+		return a * 2, b1 + b2
+	}).Times(1)
+	m.When("FuncWithRetArg", 5, Any).Call(func(a int, b *string) int {
+		*b = "foobar"
+		return a * 2
+	}).Times(1)
+	m.When("FuncWithArgs", 6, "string").Call(func(a int, b string, c int) (int, string) {
+		return a * c, b + b
+	}).Times(1)
+
+	a, b := m.FuncWithArgs(1, "string")
+	if a != 2 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(2, "string")
+	if a != 4 || b != "" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(3, "string")
+	if a != 0 || b != "" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncVariadic(4, "foo", "bar")
+	if a != 8 || b != "foobar" {
+		t.Error("fail")
+	}
+
+	a = m.FuncWithRetArg(5, &b)
+	if a != 10 || b != "foobar" {
+		t.Error("fail")
+	}
+
+	a, b = m.FuncWithArgs(6, "string")
+	if a != 0 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	if ok, err := m.Mock.Verify(); !ok {
+		t.Error(err)
 	}
 }
 

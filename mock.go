@@ -47,6 +47,7 @@ type MockFunction struct {
 	times             [2]int
 	order             uint
 	timeout           time.Duration
+	call              reflect.Value
 }
 
 // MockReturnToArgument defines the function arguments used as return parameters.
@@ -192,6 +193,33 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 		f.count++
 		f.order = m.order
 		m.order++
+
+		if f.call.IsValid() {
+			typ := f.call.Type()
+			numIn := typ.NumIn()
+			numArgs := len(arguments)
+
+			// Assign arguments in order.
+			// Not all of them are strictly required.
+			values := make([]reflect.Value, numIn)
+			for i := 0; i < numIn; i++ {
+				if i < numArgs {
+					values[i] = reflect.ValueOf(arguments[i])
+				} else {
+					values[i] = reflect.Zero(typ.In(i))
+				}
+			}
+
+			if typ.IsVariadic() {
+				values = f.call.CallSlice(values)
+			} else {
+				values = f.call.Call(values)
+			}
+
+			for i := range values {
+				f.ReturnValues = append(f.ReturnValues, values[i].Interface())
+			}
+		}
 
 		if f.timeout > 0 {
 			time.Sleep(f.timeout)
@@ -358,6 +386,20 @@ func (f *MockFunction) Between(a, b int) *MockFunction {
 // Timeout defines a timeout to sleep before returning the value of a function.
 func (f *MockFunction) Timeout(d time.Duration) *MockFunction {
 	f.timeout = d
+	return f
+}
+
+// Call executes a function passed as an argument using the arguments pased to the stub.
+// If the function returns any output parameters they will be used as a return arguments
+// when the stub is called. If the call argument is not a function it will panic when
+// the stub is executed.
+//
+// Example:
+// 		mock.When("MyMethod", mock.Any, mock.Any).Call(func(a int, b int) int {
+// 			return a+b
+// 		})
+func (f *MockFunction) Call(call interface{}) *MockFunction {
+	f.call = reflect.ValueOf(call)
 	return f
 }
 
