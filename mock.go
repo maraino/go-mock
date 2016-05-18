@@ -99,6 +99,85 @@ func AnyIf(f func(interface{}) bool) AnyIfType {
 	return AnyIfType(f)
 }
 
+// RestType indicates there may optionally be one or more remaining elements.
+type RestType string
+
+// Rest indicates there may optionally be one or more remaining elements.
+//
+// Example:
+//     mock.When("MyMethod", mock.Slice(123, mock.Rest)).Return(0)
+const Rest RestType = "mock.rest"
+
+func match(actual, expected interface{}) bool {
+	switch expected := expected.(type) {
+	case AnyType:
+		return true
+
+	case AnyIfType:
+		return expected(actual)
+
+	case AnythingOfType:
+		return reflect.TypeOf(actual).String() == string(expected)
+
+	default:
+		if expected == nil {
+			if actual == nil {
+				return true
+			} else {
+				var v = reflect.ValueOf(actual)
+
+				return v.CanInterface() && v.IsNil()
+			}
+		} else {
+			if reflect.DeepEqual(actual, expected) {
+				return true
+			} else {
+				return reflect.ValueOf(actual) == reflect.ValueOf(expected)
+			}
+		}
+	}
+
+	return false
+}
+
+// Slice is a helper to define AnyIfType arguments for slices and their elements.
+//
+// Example:
+//     mock.When("MyMethod", mock.Slice(123, mock.Rest)).Return(0)
+func Slice(elements ...interface{}) AnyIfType {
+	return AnyIf(func(argument interface{}) bool {
+		var v = reflect.ValueOf(argument)
+
+		if v.Kind() != reflect.Slice {
+			return false
+		}
+
+		var el, al = len(elements), v.Len()
+
+		if el == 0 {
+			return al == 0
+		}
+
+		if elements[el-1] == Rest {
+			el--
+
+			if al < el {
+				return false
+			}
+		} else if al != el {
+			return false
+		}
+
+		for i := 0; i < el; i++ {
+			if !match(v.Index(i).Interface(), elements[i]) {
+				return false
+			}
+		}
+
+		return true
+	})
+}
+
 // Verify verifies the restrictions set in the stubbing.
 func (m *Mock) Verify() (bool, error) {
 	for i, f := range m.Functions {

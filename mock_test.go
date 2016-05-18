@@ -786,3 +786,98 @@ func TestVerifyMocks(t *testing.T) {
 		t.Errorf("Expected verification error %s, found %s", bad1Error, err)
 	}
 }
+
+func TestSlice(t *testing.T) {
+	var m = &MockedStruct{}
+
+	t.Log("Match")
+
+	for _, test := range []struct {
+		a, e []interface{}
+	}{
+		{nil, nil},
+		{nil, []interface{}{}},
+		{nil, []interface{}{Rest}},
+		{[]interface{}{}, nil},
+		{[]interface{}{}, []interface{}{}},
+		{[]interface{}{}, []interface{}{Rest}},
+
+		{[]interface{}{1}, []interface{}{1}},
+		{[]interface{}{1}, []interface{}{Rest}},
+		{[]interface{}{1}, []interface{}{1, Rest}},
+
+		{[]interface{}{1, 2}, []interface{}{1, 2}},
+		{[]interface{}{1, 2}, []interface{}{Rest}},
+		{[]interface{}{1, 2}, []interface{}{1, Rest}},
+		{[]interface{}{1, 2}, []interface{}{1, 2, Rest}},
+
+		{[]interface{}{1, 2, 3}, []interface{}{1, 2, 3}},
+		{[]interface{}{1, 2, 3}, []interface{}{Rest}},
+		{[]interface{}{1, 2, 3}, []interface{}{1, Rest}},
+		{[]interface{}{1, 2, 3}, []interface{}{1, 2, Rest}},
+		{[]interface{}{1, 2, 3}, []interface{}{1, 2, 3, Rest}},
+	} {
+		t.Log("Test:", test)
+
+		m.Reset()
+		m.When("FuncVariadic", 1, Slice(test.e...))
+		m.FuncVariadic(1, test.a...)
+	}
+
+	t.Log("No match")
+
+	var try = func(f func()) (panicked bool) {
+		defer func() {
+			if v := recover(); v != nil {
+				panicked = true
+			}
+
+			return
+		}()
+
+		f()
+
+		return false
+	}
+
+	for _, test := range []struct {
+		a, e []interface{}
+	}{
+		{nil, []interface{}{1}},
+		{nil, []interface{}{1, Rest}},
+		{nil, []interface{}{1, 2}},
+		{nil, []interface{}{1, 2, Rest}},
+		{nil, []interface{}{1, 2, 3}},
+		{nil, []interface{}{1, 2, 3, Rest}},
+
+		{[]interface{}{}, []interface{}{1}},
+		{[]interface{}{}, []interface{}{1, Rest}},
+		{[]interface{}{}, []interface{}{1, 2}},
+		{[]interface{}{}, []interface{}{1, 2, Rest}},
+		{[]interface{}{}, []interface{}{1, 2, 3}},
+		{[]interface{}{}, []interface{}{1, 2, 3, Rest}},
+
+		{[]interface{}{1}, []interface{}{1, 2}},
+		{[]interface{}{1}, []interface{}{1, 2, Rest}},
+		{[]interface{}{1}, []interface{}{1, 2, 3}},
+		{[]interface{}{1}, []interface{}{1, 2, 3, Rest}},
+
+		{[]interface{}{1, 2}, []interface{}{1, 2, 3}},
+		{[]interface{}{1, 2}, []interface{}{1, 2, 3, Rest}},
+
+		{[]interface{}{1, 2}, []interface{}{2, 1}},
+		{[]interface{}{1, 2}, []interface{}{2, 1, Rest}},
+
+		{[]interface{}{1, 2, 3}, []interface{}{3, 2, 1}},
+		{[]interface{}{1, 2, 3}, []interface{}{3, 2, 1, Rest}},
+	} {
+		t.Log("Test:", test)
+
+		m.Reset()
+		m.When("FuncVariadic", 1, Slice(test.e...))
+
+		if !try(func() { m.FuncVariadic(1, test.a...) }) {
+			t.Errorf("Actual no panic, expected panic")
+		}
+	}
+}
