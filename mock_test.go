@@ -566,6 +566,11 @@ func TestCall(t *testing.T) {
 	m.When("FuncWithArgs", 6, "string").Call(func(a int, b string, c int) (int, string) {
 		return a * c, b + b
 	}).Times(1)
+	i := 0
+	m.When("FuncNoArgs").Call(func() int {
+		i += 1
+		return i
+	})
 
 	a, b := m.FuncWithArgs(1, "string")
 	if a != 2 || b != "stringstring" {
@@ -594,6 +599,13 @@ func TestCall(t *testing.T) {
 
 	a, b = m.FuncWithArgs(6, "string")
 	if a != 0 || b != "stringstring" {
+		t.Error("fail")
+	}
+
+	if m.FuncNoArgs() != 1 {
+		t.Error("fail")
+	}
+	if m.FuncNoArgs() != 2 {
 		t.Error("fail")
 	}
 

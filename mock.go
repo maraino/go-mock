@@ -313,6 +313,7 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 				values = f.call.Call(values)
 			}
 
+			f.ReturnValues = make([]interface{}, 0, len(values))
 			for i := range values {
 				f.ReturnValues = append(f.ReturnValues, values[i].Interface())
 			}
