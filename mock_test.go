@@ -549,7 +549,7 @@ func TestCall(t *testing.T) {
 	i, vals := 0, []int{1, 2}
 	m.When("FuncNoArgs").Call(func() int {
 		ret := vals[i]
-		i += 1
+		i++
 		return ret
 	}).Times(2)
 	m.When("FuncWithArgs", 1, "string").Call(func(a int, b string) (int, string) {

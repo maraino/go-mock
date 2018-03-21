@@ -139,8 +139,6 @@ func match(actual, expected interface{}) bool {
 			}
 		}
 	}
-
-	return false
 }
 
 // Slice is a helper to define AnyIfType arguments for slices and their elements.
