@@ -546,6 +546,12 @@ func TestTimeout(t *testing.T) {
 
 func TestCall(t *testing.T) {
 	m := &MockedStruct{}
+	i, vals := 0, []int{1, 2}
+	m.When("FuncNoArgs").Call(func() int {
+		ret := vals[i]
+		i += 1
+		return ret
+	}).Times(2)
 	m.When("FuncWithArgs", 1, "string").Call(func(a int, b string) (int, string) {
 		return a * 2, b + b
 	}).Times(1)
@@ -566,6 +572,11 @@ func TestCall(t *testing.T) {
 	m.When("FuncWithArgs", 6, "string").Call(func(a int, b string, c int) (int, string) {
 		return a * c, b + b
 	}).Times(1)
+
+	v1, v2 := m.FuncNoArgs(), m.FuncNoArgs()
+	if v1 != vals[0] || v2 != vals[1] {
+		t.Error("fail")
+	}
 
 	a, b := m.FuncWithArgs(1, "string")
 	if a != 2 || b != "stringstring" {
