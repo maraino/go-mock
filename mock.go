@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 // Mock should be embedded in the struct that we want to act as a Mock.
@@ -400,7 +401,7 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 					continue
 				}
 
-				if reflect.DeepEqual(arg, arguments[i]) || reflect.ValueOf(arg) == reflect.ValueOf(arguments[i]) {
+				if cmp.Equal(arg, arguments[i]) || reflect.DeepEqual(arg, arguments[i]) || reflect.ValueOf(arg) == reflect.ValueOf(arguments[i]) {
 					continue
 				} else {
 					found = false
