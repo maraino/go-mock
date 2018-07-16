@@ -27,9 +27,13 @@ func TestCompareUsingGoCmp(t *testing.T) {
 	foo := &EqualMe{"foo"}
 	FOO := &EqualMe{"FOO"}
 
-	sut.When("Call", foo).Return(struct{}{})
+	sut.When("Call", foo).Return(struct{}{}).Times(1)
 
 	sut.Call(FOO)
 
-	sut.Verify()
+	ok, err := sut.Verify()
+	if !ok {
+		t.Error(err)
+	}
+
 }
