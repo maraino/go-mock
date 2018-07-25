@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kr/pretty"
+	//"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 // Mock should be embedded in the struct that we want to act as a Mock.
@@ -88,7 +89,11 @@ func AnyOfType(t string) AnythingOfType {
 }
 
 // AnyIfType defines the type used as an argument that satisfies a condition.
-type AnyIfType func(interface{}) bool
+type AnyIfType struct {
+	cond func(interface{}) bool
+	description string
+}
+
 
 // AnyIf is a helper to define AnyIfType arguments.
 //
@@ -98,8 +103,8 @@ type AnyIfType func(interface{}) bool
 // 			return ok && ii.ID = "the-id"
 // 		}
 // 		mock.When("MyMethod", mock.AnyIf(f)).Return(0)
-func AnyIf(f func(interface{}) bool) AnyIfType {
-	return AnyIfType(f)
+func AnyIf(description string, f func(interface{}) bool) AnyIfType {
+	return AnyIfType{f, description}
 }
 
 // RestType indicates there may optionally be one or more remaining elements.
@@ -117,7 +122,7 @@ func match(actual, expected interface{}) bool {
 		return true
 
 	case AnyIfType:
-		return expected(actual)
+		return expected.cond(actual)
 
 	case AnythingOfType:
 		return reflect.TypeOf(actual).String() == string(expected)
@@ -146,7 +151,7 @@ func match(actual, expected interface{}) bool {
 // Example:
 //     mock.When("MyMethod", mock.Slice(123, mock.Rest)).Return(0)
 func Slice(elements ...interface{}) AnyIfType {
-	return AnyIf(func(argument interface{}) bool {
+	return AnyIf(fmt.Sprintf("Slice(%s)", elements), func(argument interface{}) bool {
 		var v = reflect.ValueOf(argument)
 
 		if v.Kind() != reflect.Slice {
@@ -283,7 +288,8 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	parts := strings.Split(functionPath, ".")
 	functionName := parts[len(parts)-1]
 
-	if f := m.find(functionName, arguments...); f != nil {
+	f, alternatives := m.find(functionName, arguments...)
+	if f != nil {
 		// Increase the counter
 		f.count++
 		f.order = m.order
@@ -357,15 +363,23 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	if len(arguments) == 0 {
 		msg = fmt.Sprintf("Mock call missing for %s()", functionName)
 	} else {
-		argsStr := pretty.Sprintf("%# v", arguments)
-		argsStr = argsStr[15 : len(argsStr)-1]
-		msg = fmt.Sprintf("Mock call missing for %s(%s)", functionName, argsStr)
+		//argsStr := pretty.Sprintf("%# v", arguments)
+		//argsStr = argsStr[15 : len(argsStr)-1]
+		argsStr := fmt.Sprintf("%+v", arguments)
+
+		alts := ""
+		for _, altMsg := range alternatives {
+			alts += fmt.Sprintf("\t%s\n", altMsg)
+		}
+
+		msg = fmt.Sprintf("Mock call missing for:\n%s(%s)\nExpected calls:\n%s\n", functionName, argsStr, alts)
 	}
 	panic(msg)
 }
 
-func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
+func (m *Mock) find(name string, arguments ...interface{}) (*MockFunction, []string) {
 	var ff *MockFunction
+	var alternatives []string
 
 	for _, f := range m.Functions {
 		if f.Name != name {
@@ -377,38 +391,40 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 		}
 
 		found := true
+		alternative := name + "("
 		for i, arg := range f.Arguments {
 			switch arg.(type) {
 			case AnyType:
-				continue
+				// do nothing on purpose
 			case AnythingOfType:
-				if string(arg.(AnythingOfType)) == reflect.TypeOf(arguments[i]).String() {
-					continue
-				} else {
+				if argType := string(arg.(AnythingOfType)); argType != reflect.TypeOf(arguments[i]).String() {
 					found = false
 				}
 			case AnyIfType:
-				cond, ok := arg.(AnyIfType)
-				if ok && cond(arguments[i]) {
-					continue
-				} else {
+				anyIf, ok := arg.(AnyIfType)
+				if !ok || !anyIf.cond(arguments[i]) {
 					found = false
 				}
 			default:
 				v := reflect.ValueOf(arguments[i])
-				if arg == nil && (arguments[i] == nil || (v.CanInterface() && v.IsNil())) {
-					continue
-				}
+				bothAreNil := arg == nil && (arguments[i] == nil || (v.CanInterface() && v.IsNil()))
 
-				if reflect.DeepEqual(arg, arguments[i]) || reflect.ValueOf(arg) == reflect.ValueOf(arguments[i]) {
-					continue
-				} else {
+				if !(bothAreNil || cmp.Equal(arg, arguments[i]) || reflect.DeepEqual(arg, arguments[i])) && reflect.ValueOf(arg) != reflect.ValueOf(arguments[i]) {
 					found = false
 				}
 			}
+
+			alternative += fmt.Sprintf("%+v", arg)
+
+			if i < len(f.Arguments) - 1 {
+				alternative += ", "
+			}
 		}
 
+		alternative += ")"
+
 		if !found {
+			alternatives = append(alternatives, alternative)
 			continue
 		}
 
@@ -421,10 +437,10 @@ func (m *Mock) find(name string, arguments ...interface{}) *MockFunction {
 			continue
 		}
 
-		return f
+		return f, alternatives
 	}
 
-	return ff
+	return ff, alternatives
 }
 
 // Return defines the return values of a *MockFunction.
