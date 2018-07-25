@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kr/pretty"
+	//"github.com/kr/pretty"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -363,15 +363,16 @@ func (m *Mock) Called(arguments ...interface{}) *MockResult {
 	if len(arguments) == 0 {
 		msg = fmt.Sprintf("Mock call missing for %s()", functionName)
 	} else {
-		argsStr := pretty.Sprintf("%# v", arguments)
-		argsStr = argsStr[15 : len(argsStr)-1]
+		//argsStr := pretty.Sprintf("%# v", arguments)
+		//argsStr = argsStr[15 : len(argsStr)-1]
+		argsStr := fmt.Sprintf("%+v", arguments)
 
 		alts := ""
 		for _, altMsg := range alternatives {
 			alts += fmt.Sprintf("\t%s\n", altMsg)
 		}
 
-		msg = fmt.Sprintf("Mock call missing for %s(%s)\nExpected calls:\n%s", functionName, argsStr, alts)
+		msg = fmt.Sprintf("Mock call missing for:\n%s(%s)\nExpected calls:\n%s\n", functionName, argsStr, alts)
 	}
 	panic(msg)
 }
