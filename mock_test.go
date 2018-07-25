@@ -228,7 +228,7 @@ func TestAny(t *testing.T) {
 	m.When("FuncWithArgs", 1, Any).Return(2, "booh").Times(1)
 	m.When("FuncWithArgs", 2, Any).Return(4, "booh").Times(2)
 	m.When("FuncWithArgs", AnyOfType("int"), AnyOfType("string")).Return(6, "booh").Times(2)
-	m.When("FuncWithArgs", AnyIf(f1), AnyIf(f2)).Return(8, "booh").Times(2)
+	m.When("FuncWithArgs", AnyIf("5 or 6", f1), AnyIf("foo", f2)).Return(8, "booh").Times(2)
 
 	a, b := m.FuncWithArgs(1, "string")
 	if a != 2 || b != "booh" {
@@ -346,7 +346,7 @@ func TestAnyIfNotFound(t *testing.T) {
 		return ok && ii == 2
 	}
 
-	m.When("FuncWithArgs", AnyIf(f1), "foo").Return(2, "stringstring")
+	m.When("FuncWithArgs", AnyIf("2", f1), "foo").Return(2, "stringstring")
 	m.FuncWithArgs(1, "foo")
 }
 
